@@ -1,5 +1,5 @@
 use std::error::Error;
-use rand::{rng, seq::IndexedRandom, RngCore};
+use rand::{rng, seq::{IndexedRandom, IteratorRandom}, RngCore};
 
 use crate::{Array, Item};
 
@@ -18,41 +18,37 @@ fn insert_elements_in_array_list() -> Result<(), Box<dyn Error>> {
     
     assert!(index == 0);
     let array_inner = array.get(index)?;
-    assert!(array_inner == item);
+    assert!(*array_inner == item);
 
     Ok(())
 }
 
 #[test]
 
-fn handle_gaps() -> Result<(), Box<dyn Error>> {
+fn handle_array_length_after_remove_and_insert() -> Result<(), Box<dyn Error>> {
     let mut array = Array::default();
     let mut indexes = Vec::new();
     for _ in 0..100 {
         let item = Item(rng().next_u64() as u128);
         indexes.push(array.insert(item)?);
     }
-
     // Now, remove some elements
+    let len_before_remove = array.len();
 
-    for _ in 0..20 {
-        let index = *indexes.choose(&mut rng()).ok_or(TestError::FailToChoose)?;
-        let len = array.len();
+    while array.len() > 80 {
+        let index_ind = (0..indexes.len()).choose(&mut rng()).ok_or(TestError::FailToChoose)?;
+        let index = indexes.remove(index_ind);
+        println!("Index: {index}");
         array.remove(index)?;
-        if index == (len - 1) {
-            println!("last index");
-            assert_eq!(array.len(), len - 1);
-        }
     }
-
-    // Now lets try to add new elements
-    let old_len = array.len();
+    
+    // Add elements
     for _ in 0..20 {
         let item = Item(rng().next_u64() as u128);
         indexes.push(array.insert(item)?);
     }
-
-    assert_eq!(old_len, array.len());
-
+    
+    let len_after_insert = array.len();
+    assert_eq!(len_before_remove, len_after_insert);
     Ok(())
 }
